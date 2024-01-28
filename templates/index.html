@@ -1,0 +1,193 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with PDF💁</title>
+
+    <!-- Include Tailwind CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,400;0,500;0,600;0,800;0,900;1,400;1,500&display=swap" rel="stylesheet">
+    <!-- Your custom styles -->
+    <style>
+
+      *{
+        font-family: 'Poppins', sans-serif;
+        
+      }
+        body {
+          
+          line-height: 1.6;
+          margin: 20px;
+        }
+    
+        h1, h2, h3, h4, h5, h6 {
+          color: #333;
+        }
+    
+        p {
+          margin-bottom: 15px;
+        }
+    
+        a {
+          color: #007bff;
+        }
+    
+        strong {
+          font-weight: bold;
+        }
+    
+        em {
+          font-style: italic;
+        }
+    
+        blockquote {
+          margin: 0;
+          padding: 10px 20px;
+          background-color: #1b1b1c;
+          border-left: 4px solid #007bff;
+        }
+    
+        pre {
+          background-color:  #6b7280;
+          padding: 10px;
+          border-radius: 5px;
+          overflow-x: auto;
+        }
+    
+        code {
+          font-family: 'Courier New', Courier, monospace;
+          background-color: #6b7280;
+          color: white;
+          padding: 2px 4px;
+          border-radius: 3px;
+        }
+    
+        ul, ol {
+          margin-bottom: 15px;
+        }
+    
+        li {
+          margin-bottom: 5px;
+        }
+      </style>
+</head>
+<body class="bg-gray-700">
+
+    <!-- Chat Container -->
+    <div class="max-w-3xl mx-auto bg-gray-900 text-white shadow-md rounded-md p-6 mt-8">
+        <h1 class="text-3xl font-bold  text-white mb-6">Chat with PDF💁</h1>
+
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="space-y-4 overflow-y-auto" style="max-height: 400px;">
+            <!-- Chat messages will be displayed here -->
+        </div>
+        
+
+        <!-- Chat Form -->
+        <form id="uploadForm" action="/process" method="post" enctype="multipart/form-data" class="mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="pdf_file" class="block text-sm font-medium text-white">Upload PDF File:</label>
+                    <input type="file" name="pdf_file" accept=".pdf" required
+                        class="mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div>
+                    <label for="user_question" class="block text-sm font-medium text-white">Ask a Question:</label>
+                    <input type="text" name="user_question" id="user_question" placeholder="ask here..." required
+                        class="mt-1 p-2 block w-full rounded-md border-none text-gray-800 font-bold shadow-sm focus:ring-indigo-800 focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loadingSpinner" style="display: none;" class="text-center mt-4">Processing...</div>
+
+            <!-- Submit Button -->
+            <button type="submit"
+                class="mt-4 w-full p-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring focus:border-indigo-300">
+                Submit & Process
+            </button>
+        </form>
+    </div>
+
+    <!-- Result Display -->
+    <div id="resultDiv" class="max-w-lg mx-auto mt-8"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        document.getElementById("uploadForm").addEventListener("submit", function (event) {
+            event.preventDefault();
+
+            var formData = new FormData(this);
+
+            // Show loading spinner during the fetch request
+            document.getElementById("loadingSpinner").style.display = "block";
+
+            fetch("/process", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide the loading spinner after the fetch request completes
+                document.getElementById("loadingSpinner").style.display = "none";
+
+                // Append user's question to chat messages
+                appendMessage("User", formData.get("user_question"));
+                // Append AI response to chat messages
+                appendMessage("AI", data.result);
+
+            
+            })
+            .catch(error => {
+                // Hide the loading spinner in case of an error
+                document.getElementById("loadingSpinner").style.display = "none";
+
+                console.error("Error:", error);
+            });
+        });
+
+        function appendMessage(sender, message) {
+    // Create a message element
+    var messageElement = document.createElement("div");
+    messageElement.classList.add("text-lg", "mb-2");
+
+    // Create a sender label
+    var senderLabel = document.createElement("span");
+    senderLabel.classList.add("font-bold", "mr-2");
+    senderLabel.textContent = sender + ":";
+
+    // Append sender label to the message element
+    messageElement.appendChild(senderLabel);
+
+    // Create a message content element
+    var messageContent = document.createElement("span");
+
+    // Check if the message needs Markdown parsing
+    if (sender === "AI") {
+        // Parse the AI response using marked
+        messageContent.innerHTML = marked.parse(message);
+        
+        
+    } else {
+        // For other senders, append the text directly
+        messageContent.textContent = message;
+        messageElement.classList.add("bg-gray-700","p-2");
+    }
+
+    // Append message content to the message element
+    messageElement.appendChild(messageContent);
+
+    // Append the message element to chatMessages div
+    document.getElementById("chatMessages").appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+    </script>
+</body>
+</html>
